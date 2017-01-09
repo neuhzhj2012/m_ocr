@@ -48,14 +48,19 @@ int GetFileList(char *basePath, char *pchLang, int nSegMode)
 		{
 		case 1:
 			segMode = tesseract::RIL_BLOCK;
+			break;
 		case 2:
 			segMode = tesseract::RIL_PARA;
+			break;
 		case 3:
 			segMode = tesseract::RIL_TEXTLINE;
+			break;
 		case 4:
 			segMode = tesseract::RIL_WORD;
+			break;
 		case 5:
 			segMode = tesseract::RIL_SYMBOL;
+			break;
 
 		default:
 			break;
