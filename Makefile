@@ -1,8 +1,8 @@
 CC	:= g++
 
-LCFLAGS = -I/usr/include/tesseract/ -I/usr/local/include/leptonica/
+LCFLAGS = -I/usr/local/include/tesseract/ -I/usr/local/include/leptonica/
 LCFLAGS += -I/usr/include/opencv/
-LIBPATH	:= 
+LIBPATH	:= -L/usr/local/lib 
 
 LIBS	:=  -lz  -lm  -ltesseract -llept `pkg-config --libs opencv`
 

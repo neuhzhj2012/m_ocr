@@ -1,6 +1,6 @@
 #include "allheaders.h"
-#include "renderer.h"
 #include "baseapi.h"
 #include "strngs.h"
-#include "readConfig.h"
+#include "mser.h"
+#include <dirent.h>
 #include <vector>

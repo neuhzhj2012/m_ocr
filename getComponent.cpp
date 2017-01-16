@@ -163,7 +163,17 @@ int GetFileList(char *basePath, char *pchLang, int nSegMode)
 		}
 
 		*/
-		
+				
+		//del space
+		std::string::iterator it;
+		for (it = sRecogRst.begin(); it != sRecogRst.end(); ++it)
+		{
+			if (*it == ' ' || *it == '\n')
+			{
+				sRecogRst.erase(it);
+			}
+		}
+
 		FILE* pf = fopen(sLogName.c_str(), "at");
 		if (pf != NULL)
 		{
