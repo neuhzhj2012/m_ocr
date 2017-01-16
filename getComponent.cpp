@@ -91,28 +91,55 @@ int GetFileList(char *basePath, char *pchLang, int nSegMode)
 		sImgName = sImgName.substr(0, nSeg);
 		sLogName = sImgName + ".txt";
 		std::cout << "img: " << pchImgName << "\tlang: " << pchLang << "\tmode: " << segMode << "\tlog:" << sLogName << std::endl;
-		Pix *image = pixRead(pchImgName);
+
 		cv::Mat mtImg = cv::imread(pchImgName);
-		tesseract::TessBaseAPI *api = new tesseract::TessBaseAPI();
-		//api->Init(NULL, "eng");
-		api->Init(NULL, pchLang);
-		api->SetImage(image);
-		//Boxa* boxes = api->GetComponentImages(tesseract::RIL_TEXTLINE, true, NULL, NULL);// line seg
-		Boxa* boxes = api->GetComponentImages(segMode, true, NULL, NULL);
-		printf("Found %d textline image components.\n", boxes->n);
+		cv::Mat mtImgGray ;
+		cv::cvtColor(mtImg, mtImgGray, CV_BGR2GRAY);
+
+		std::vector<cv::Rect> candidates;
+		cv::Rect rctRoi;
+		candidates = mserGetPlate(mtImg);	//mser
+		rctRoi = candidates[0];
+		//extend u/d edge
+		rctRoi.y = rctRoi.y - 5 > 0 ? (rctRoi.y - 5) : 0;
+		rctRoi.height = mtImgGray.rows - 1 - (rctRoi.y + rctRoi.height + 10) > 0 ? rctRoi.height + 10 : mtImgGray.rows - 1 - rctRoi.y;
+		cv::Mat mtImgRoi = mtImgGray(rctRoi).clone(); //need data copy,not just matrix head
 
 		std::string sRecogRst;
 
+		//方法1：对整图和裁剪图测试效果较好
+		tesseract::TessBaseAPI tess;
+		tess.Init(NULL, pchLang, tesseract::OEM_DEFAULT);
+		tess.SetImage((uchar*)mtImgRoi.data, mtImgRoi.cols, mtImgRoi.rows, 1, mtImgRoi.cols);
+		char *out = tess.GetUTF8Text();
+		sRecogRst = out;
+		std::cout << "rst: " << out << std::endl;
+		// release Memory
+		delete[] out;
 
-		for (int i = 0; i < boxes->n; i++) {
+		/*
+		//方法2
+		//Pix *image = pixRead(pchImgName);
+		tesseract::TessBaseAPI *api = new tesseract::TessBaseAPI();
+		api->Init(NULL, pchLang);
+		//api->SetImage(image);
+		api->SetImage((uchar*)mtImgRoi.data, mtImgRoi.cols, mtImgRoi.rows, 1, mtImgRoi.cols);
+		Boxa* boxes = api->GetComponentImages(segMode, true, NULL, NULL);
+		printf("Found %d textline image components.\n", boxes->n);
+
+		
+		
+		for (int i = 0; i < boxes->n; i++) 
+		{
 			BOX* box = boxaGetBox(boxes, i, L_CLONE);
 			api->SetRectangle(box->x, box->y, box->w, box->h);
 			char* ocrResult = api->GetUTF8Text();
+			api->End();
 			std::string sOcrResult = ocrResult;
 			sRecogRst += sOcrResult;
 			int conf = api->MeanTextConf();
 			cv::Rect rct(box->x, box->y, box->w, box->h);
-			rectangle(mtImg, rct, cv::Scalar(0, 0, 255), 2);
+			//rectangle(mtImg, rct, cv::Scalar(0, 0, 255), 2);	
 
 			fprintf(stdout, "Box[%d]: x=%d, y=%d, w=%d, h=%d, confidence: %d, text: %s",
 				i, box->x, box->y, box->w, box->h, conf, ocrResult);
@@ -125,6 +152,7 @@ int GetFileList(char *basePath, char *pchLang, int nSegMode)
 			fclose(pf);
 
 		}
+		delete api;
 		std::string::iterator it;
 		for (it = sRecogRst.begin(); it != sRecogRst.end(); ++it)
 		{
@@ -133,13 +161,16 @@ int GetFileList(char *basePath, char *pchLang, int nSegMode)
 				sRecogRst.erase(it);
 			}
 		}
+
+		*/
+		
 		FILE* pf = fopen(sLogName.c_str(), "at");
 		if (pf != NULL)
 		{
 			fprintf(pf, "recognition text: %s", sRecogRst.c_str());
 		}
 		fclose(pf);
-
+		rectangle(mtImg, rctRoi, cv::Scalar(0, 0, 255), 2);
 		cv::imwrite(sSaveName.c_str(), mtImg);
 
 	}
